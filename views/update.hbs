@@ -1,0 +1,75 @@
+<div class="container">
+  <h2>Update Products</h2>
+  <form action="/products/{{products.id}}" class="form-horizontal" enctype="multipart/form-data" method="post">
+
+    <div class="form-group">
+      <label class="control-label col-sm-2">Product Name:</label>
+      <div class="col-sm-10">
+        <input type="text" class="form-control" placeholder="Enter a name of Product" name="name"
+          value="{{products.name}}">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="control-label col-sm-2">Category:</label>
+      <div class="col-sm-10 category" value="{{products.category_id}}">
+        <select class="form-control" name="category">
+          {{#each categories}}
+          <option id="{{id}}">{{name}}</option>
+          {{/each}}
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="control-label col-sm-2">Specification:</label>
+      <div class="col-sm-10">
+        <input type="text" class="form-control" placeholder="Product Specification" name="specification"
+          value="{{products.specification}}">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="control-label col-sm-2">Selling Price:</label>
+      <div class="col-sm-10">
+        <input type="text" class="form-control" placeholder="Selling price eg.29,999" name="newprice"
+          value="{{products.new_price}}">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="control-label col-sm-2">Market Price:</label>
+      <div class="col-sm-10">
+        <input type="text" class="form-control" placeholder="Market price eg.32,999" name="oldprice"
+          value="{{products.old_price}}">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="control-label col-sm-2">Image Upload:</label>
+      <div class="col-sm-4 ">
+        <input type="text" class="form-control" id="filename" name="imagename" value="{{products.shortname}}">
+      </div>
+        <label class="file-upload btn btn-primary" >
+          Browse for file ... <input name="upload" id="file" type="file" style="display: none" />
+        </label>
+    </div>
+    <div class="form-group">
+      <div class="col-sm-offset-2 col-sm-10">
+        <button type="submit" class="btn btn-default" id="submit">Submit</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+  // Add the following code if you want the name of the file appear on select
+  $('#file').on('change', function () {
+    var fileName = $(this).val();
+    document.getElementById('filename').innerHTML = fileName;
+    console.log(fileName);
+  })
+  $(document).ready(function () {
+    var id = $(".category")[0].getAttribute("value");
+    $(`.category option[id=${id}]`).attr('selected', 'selected');
+  });
+
+</script>
