@@ -1,18 +1,15 @@
 const express = require("express");
 const router = express.Router();
-const Joi = require("joi");
-const jwt = require("jsonwebtoken");
-const createError = require("http-errors");
 const verifyToken = require("../authentication/verify");
-const schema = require("../validation/category");
+const validation = require("../validation/category");
 const bodyparser = require("body-parser");
 const db = require("../database/query");
 router.use(bodyparser.json());
 router.use(bodyparser.urlencoded({ extended: false }));
 
-router.get(`/:endpoint/products`, async function(req, res, next) {
+router.get(`/:name/products`, async function(req, res, next) {
   let categories = await db.categoriesQuery();
-  let result = await db.categoriesNameQuery(req.params.endpoint);
+  let result = await db.categoriesNameQuery(req.params.name);
   if (result.length == 0) {
     next(createError(404, "Url not found"));
   } else {
@@ -24,7 +21,7 @@ router.get(`/:endpoint/products`, async function(req, res, next) {
       });
     } else {
       for (let i = 1; i < categories.length; i++) {
-        if (req.params.endpoint == categories[i].name) {
+        if (req.params.name == categories[i].name) {
           let products = await db.productsQuery(i + 1);
           res.render("cast", {
             products: products,
@@ -36,81 +33,72 @@ router.get(`/:endpoint/products`, async function(req, res, next) {
   }
 });
 
-router.post("/", verifyToken, (req, res, next) => {
-  Joi.validate(req.body, schema, (err, result) => {
-    if (err) {
-      next(err);
-    } else {
-      console.log(result);
-      addCategory();
-      // res.send("validation Succes");
-    }
-  });
-  async function addCategory() {
-    let query = await db.categoriesNameQuery(req.body.name);
-    if (query.length == 1) {
-      res.status(400).send({ message: "Category already exists" });
-    } else {
-      let addquery = `insert into categories(name) values('${req.body.name}')`;
-      let queryresult = await db.sqlQuery(addquery);
-      console.log(queryresult);
-      res.json({
+router.post("/", verifyToken, validation, async (req, res, next) => {
+  let query = await db.categoriesNameQuery(req.body.name);
+  if (query.length == 1) {
+    next(createError(400, "Category already exists"));
+  } else {
+    try {
+      let queryresult = await db.addCategory(req.body.name);
+      res.status(201).json({
         data: {
           id: queryresult.insertId,
           name: req.body.name
         },
         message: "Category added"
       });
+    } catch (err) {
+      next(createError(500, "Database error"));
     }
   }
 });
-router.put("/:id", verifyToken, async (req, res, next) => {
-  jwt.verify(req.token, "secretkey", async (err, authData) => {
-    if (err) {
-      res.sendStatus(403);
+router.put("/:id", verifyToken, validation, async (req, res, next) => {
+  let idquery = await db.categoriesId(req.params.id);
+  if (idquery.length == 1) {
+    let query = await db.categoriesNameQuery(req.body.name);
+    if (query.length == 1) {
+      next(createError(400, "Category name already exists can't be updated"));
     } else {
-      let query = await db.categoriesId(req.params.id);
-      if (query.length == 1) {
-        Joi.validate(req.body, schema, (err, result) => {
-          if (err) {
-            next(err);
-          } else {
-            console.log(result);
-            updateCategory();
-          }
+      try {
+        await db.updateCategory(req.body.name, req.params.id);
+        res.json({
+          data: {
+            id: req.params.id,
+            name: req.body.name
+          },
+          message: "Category updated"
         });
-      }
-      else{
-        res.status(400).send({message:"Id doesn't exists"})
-      }
-      async function updateCategory() {
-        let addquery = `update categories set name='${req.body.name}' where id=${req.params.id}`;
-        let queryresult = await db.sqlQuery(addquery);
-        if (queryresult.length) {
-          res.send("Updated Succesfully");
-        } else {
-          res.status(500).send("Bad request");
-        }
+      } catch (err) {
+        next(createError(500, "Database error"));
       }
     }
-  });
+  } else {
+    next(createError(400, "Id doesn't exists"));
+  }
 });
 
-router.delete("/:id", verifyToken, (req, res, next) => {
-  jwt.verify(req.token, "secretkey", async (err, authData) => {
-    if (err) {
-      res.sendStatus(403);
-    } else {
-      let id = req.params.id;
-      let deletequery = `delete from categories where id=${id}`;
-      let queryresult = await db.sqlQuery(deletequery);
-      if (queryresult.length == 1) {
-        res.send("deleted successfully");
-      } else {
-        res.send("category does not exist ");
-      }
+router.delete("/:id", verifyToken, async (req, res, next) => {
+  let id = req.params.id;
+  let query = await db.categoriesId(id);
+  let idquery = await db.categoriesId(req.params.id);
+  if (idquery.length == 1) {
+    try {
+      let queryresult = await db.deleteCategory(id);
+      res.status(204).json({
+        data: query,
+        message: "Deleted Successfully"
+      });
+    } catch (err) {
+      next(createError(500, "Database error"));
     }
-  });
+  } else {
+    next(createError(400, "Category doesn't exists"));
+  }
 });
 
+function createError(status, errmessage) {
+  router.use((req, res) => {
+    res.status(status).send(errmessage);
+  });
+}
 module.exports = router;

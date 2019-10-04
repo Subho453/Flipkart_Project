@@ -93,7 +93,7 @@ function categoriesNameQuery(categoryName) {
 function categoriesId(categoryId) {
   return new Promise((resolve, reject) => {
     connection.query(
-      `SELECT id FROM categories where id=${categoryId}`,
+      `SELECT * FROM categories where id=${categoryId}`,
       function(err, result, fields) {
         if (err) reject(err);
         else resolve(result);
@@ -101,6 +101,25 @@ function categoriesId(categoryId) {
     );
   });
 }
+
+async function addCategory(name) {
+  let addquery = `insert into categories(name) values('${name}')`;
+  let queryresult = await sqlQuery(addquery);
+  return queryresult;
+}
+
+async function updateCategory(name, id) {
+  let query = `update categories set name='${name}' where id=${id}`;
+  let queryresult = await sqlQuery(query);
+  return queryresult;
+}
+
+async function deleteCategory(id) {
+  let deletequery = `delete from categories where id=${id}`;
+  let queryresult = await sqlQuery(deletequery);
+  return queryresult;
+}
+
 module.exports = {
   sqlQuery,
   checkExistingUser,
@@ -110,5 +129,8 @@ module.exports = {
   categoriesIdQuery,
   categoriesQuery,
   categoriesNameQuery,
-  categoriesId
+  categoriesId,
+  addCategory,
+  updateCategory,
+  deleteCategory
 };
