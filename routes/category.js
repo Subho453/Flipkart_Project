@@ -13,16 +13,22 @@ router.get(`/:name/products`, async function(req, res, next) {
   if (result.length == 0) {
     next(createError(404, "Url not found"));
   } else {
-    if (req.params.endpoint == "all") {
+    if (req.params.name == "all") {
       let products = await db.productsQueryAll();
+      res.setHeader("Content-Type", "text/html");
       res.render("cast", {
         products: products,
         categories: categories
       });
+      // res.json({
+      //   products: products,
+      //   categories: categories
+      // });
     } else {
       for (let i = 1; i < categories.length; i++) {
         if (req.params.name == categories[i].name) {
           let products = await db.productsQuery(i + 1);
+          res.setHeader("Content-Type", "text/html");
           res.render("cast", {
             products: products,
             categories: categories
